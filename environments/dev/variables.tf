@@ -53,8 +53,14 @@ variable "instance_type" {
   default     = "t2.micro"
 }
 
+variable "ssh_public_key_material" {
+  description = "The actual SSH public key string (used in CI/CD). If empty, falls back to local file."
+  type        = string
+  default     = ""
+}
+
 variable "ssh_public_key_path" {
-  description = "Path to SSH public key file"
+  description = "Path to SSH public key file (used for local deployments)"
   type        = string
   default     = "~/.ssh/aws-infra-key.pub"
 }
