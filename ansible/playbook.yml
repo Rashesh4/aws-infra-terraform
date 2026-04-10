@@ -1,0 +1,132 @@
+# =============================================================================
+# Ansible Playbook — Web Server Configuration
+# Configures nginx, deploys application page, and verifies the setup
+#
+# Usage: ansible-playbook -i inventory.ini playbook.yml
+# =============================================================================
+
+---
+- name: Configure Web Server
+  hosts: webservers
+  become: yes
+
+  vars:
+    app_name: "web-platform"
+    nginx_port: 80
+
+  tasks:
+    # ---- System Updates ----
+    - name: Update all system packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+      tags: [system]
+
+    # ---- Nginx Installation & Configuration ----
+    - name: Install nginx
+      ansible.builtin.dnf:
+        name: nginx
+        state: present
+      tags: [nginx]
+
+    - name: Ensure nginx is running and enabled on boot
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes
+      tags: [nginx]
+
+    # ---- Deploy Application ----
+    - name: Deploy custom index page
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>{{ app_name }} — Configured by Ansible</title>
+              <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body {
+                      font-family: 'Segoe UI', system-ui, sans-serif;
+                      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+                      color: #fff;
+                      min-height: 100vh;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                  }
+                  .card {
+                      text-align: center;
+                      padding: 3rem;
+                      background: rgba(255, 255, 255, 0.05);
+                      border-radius: 20px;
+                      backdrop-filter: blur(10px);
+                      border: 1px solid rgba(255, 255, 255, 0.1);
+                      max-width: 600px;
+                      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                  }
+                  h1 { color: #00d4ff; font-size: 2.5rem; margin-bottom: 1rem; }
+                  p { font-size: 1.1rem; opacity: 0.8; line-height: 1.6; }
+                  .badges {
+                      display: flex;
+                      gap: 0.8rem;
+                      justify-content: center;
+                      margin-top: 1.5rem;
+                      flex-wrap: wrap;
+                  }
+                  .badge {
+                      padding: 0.4rem 1rem;
+                      background: rgba(0, 212, 255, 0.15);
+                      border: 1px solid rgba(0, 212, 255, 0.3);
+                      border-radius: 20px;
+                      font-size: 0.85rem;
+                      color: #00d4ff;
+                  }
+                  .meta {
+                      margin-top: 2rem;
+                      font-size: 0.85rem;
+                      opacity: 0.5;
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="card">
+                  <h1>🚀 {{ app_name }}</h1>
+                  <p>Configured by <strong>Ansible</strong> + provisioned by <strong>Terraform</strong></p>
+                  <div class="badges">
+                      <span class="badge">Terraform</span>
+                      <span class="badge">Ansible</span>
+                      <span class="badge">AWS</span>
+                      <span class="badge">Nginx</span>
+                  </div>
+                  <p class="meta">Last deployed: {{ ansible_date_time.iso8601 }}</p>
+              </div>
+          </body>
+          </html>
+        dest: /usr/share/nginx/html/index.html
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Restart nginx
+      tags: [deploy]
+
+    # ---- Verification ----
+    - name: Verify nginx is responding on port {{ nginx_port }}
+      ansible.builtin.uri:
+        url: "http://localhost:{{ nginx_port }}"
+        status_code: 200
+      register: health_check
+      tags: [verify]
+
+    - name: Display verification result
+      ansible.builtin.debug:
+        msg: "✅ Nginx is healthy — HTTP {{ health_check.status }}"
+      tags: [verify]
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
