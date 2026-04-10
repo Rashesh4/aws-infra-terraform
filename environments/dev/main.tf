@@ -97,7 +97,7 @@ module "web_security_group" {
 # -----------------------------------------------------------------------------
 resource "aws_key_pair" "deployer" {
   key_name   = "${local.name_prefix}-key"
-  public_key = var.ssh_public_key_material != "" ? var.ssh_public_key_material : try(file(var.ssh_public_key_path), "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI_dummy_key_for_ci_validation")
+  public_key = var.ssh_public_key_material != "" ? var.ssh_public_key_material : try(file(var.ssh_public_key_path), "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXR69f3KM8l8Nd9rPsjRcflR0cCba/MlFkCcwcl4uMV rashesh-aws-infra")
 
   tags = local.common_tags
 }

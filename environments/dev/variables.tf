@@ -56,7 +56,7 @@ variable "instance_type" {
 variable "ssh_public_key_material" {
   description = "The actual SSH public key string (used in CI/CD). If empty, falls back to local file."
   type        = string
-  default     = ""
+  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHXR69f3KM8l8Nd9rPsjRcflR0cCba/MlFkCcwcl4uMV rashesh-aws-infra"
 }
 
 variable "ssh_public_key_path" {
