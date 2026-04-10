@@ -140,22 +140,19 @@ In each case, I reviewed the AI-generated output, verified against official docu
 
 ## 🐛 Challenges & Solutions
 
-*(Document actual challenges encountered during deployment below)*
-
 | Challenge | Solution |
 |---|---|
-| | |
-| | |
+| **IAM Inline Policy Limit** — The CI/CD IAM policy was originally an inline policy, which failed because it exceeded the AWS 2048-character limit. | Split the single inline policy into multiple AWS Managed Policies (`aws_iam_policy`) and attached them using `aws_iam_user_policy_attachment`. |
+| **SSH Key in CI/CD** — The `aws_key_pair` resource relied on a local file path (`~/.ssh/...`), causing the GitHub Action to fail because the file didn't exist in the CI runner. | Added a highly flexible fallback using `var.ssh_public_key_material`. In CI/CD, the key is passed directly via variable, skipping the local file read while keeping local terraform functional. |
+| **Non-ASCII Characters** — AWS API rejected the deployment due to an "em dash" (—) in the security group description. | Simplified all AWS resource descriptions in Terraform to strictly use basic ASCII characters. |
 
 ---
 
 ## 📝 Key Learnings
 
-*(Document learnings during implementation below)*
-
-1.
-2.
-3.
+1. **IAM Policy Structuring:** Inline user policies are severely constrained in size. For complex CI/CD permissions involving multiple services, standalone Managed Policies are required.
+2. **Hybrid Local/CI Workflows:** Care must be taken when depending on local filesystem paths (`file()`) in Terraform. It breaks when executed on remote runners unless accounted for with conditionals or default variable text.
+3. **AWS API Quirks:** Not all strings are treated equally by AWS. Descriptions in security groups must be strictly ASCII to prevent deployment failure.
 
 ---
 
@@ -163,11 +160,11 @@ In each case, I reviewed the AI-generated output, verified against official docu
 
 | Phase | Time Spent | Activities |
 |---|---|---|
-| Planning & Design | | Architecture decisions, module selection |
-| Terraform Code | | VPC, EC2, S3, IAM, Security Groups |
-| Bootstrap Setup | | S3 backend, DynamoDB, CI/CD IAM user |
-| CI/CD Pipeline | | GitHub Actions workflow |
-| Ansible | | Playbook for nginx configuration |
-| Documentation | | README, PROCESS.md |
-| Testing | | terraform plan/apply, verification |
-| **Total** | | |
+| Planning & Design | 30 mins | Architecture decisions, module selection |
+| Terraform Code | 1 hour | VPC, EC2, S3, IAM, Security Groups configuration |
+| Bootstrap Setup | 30 mins | S3 backend, DynamoDB, CI/CD IAM user, IAM limits debugging |
+| CI/CD Pipeline | 45 mins | GitHub Actions workflow, debugging SSH key injection |
+| Ansible | 30 mins | Playbook for nginx configuration, updating inventory |
+| Documentation | 30 mins | README, PROCESS.md, creating plan and outputs |
+| Testing | 15 mins | terraform plan/apply, visual verification of Nginx |
+| **Total** | **~4 hours** | Complete Infrastructure Automation implementation |
