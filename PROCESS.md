@@ -8,7 +8,7 @@ This document records the system prompts, AI tool usage, architectural decisions
 
 | Tool | Purpose |
 |---|---|
-| **Cursor / AI Assistant** | Infrastructure design, Terraform module configuration, CI/CD pipeline creation |
+| **Cursor / Antigravity / AI Assistant** | Infrastructure design, Terraform module configuration, CI/CD pipeline creation |
 | **Terraform CLI** | Infrastructure provisioning and validation |
 | **AWS CLI** | AWS credential management and resource verification |
 | **Git + GitHub** | Version control and CI/CD integration |
@@ -143,7 +143,7 @@ In each case, I reviewed the AI-generated output, verified against official docu
 | Challenge | Solution |
 |---|---|
 | **IAM Inline Policy Limit** — The CI/CD IAM policy was originally an inline policy, which failed because it exceeded the AWS 2048-character limit. | Split the single inline policy into multiple AWS Managed Policies (`aws_iam_policy`) and attached them using `aws_iam_user_policy_attachment`. |
-| **SSH Key in CI/CD** — The `aws_key_pair` resource relied on a local file path (`~/.ssh/...`), causing the GitHub Action to fail because the file didn't exist in the CI runner. | Added a highly flexible fallback using `var.ssh_public_key_material`. In CI/CD, the key is passed directly via variable, skipping the local file read while keeping local terraform functional. |
+| **SSH Key in CI/CD** — The `aws_key_pair` resource relied on a local file path (`~/.ssh/...`), causing the GitHub Action to fail because the file didn't exist in the CI runner. | Added a variable fallback (`var.ssh_public_key_material`) so the key material can be passed directly in CI without relying on a local file path. |
 | **Non-ASCII Characters** — AWS API rejected the deployment due to an "em dash" (—) in the security group description. | Simplified all AWS resource descriptions in Terraform to strictly use basic ASCII characters. |
 
 ---
@@ -153,6 +153,7 @@ In each case, I reviewed the AI-generated output, verified against official docu
 1. **IAM Policy Structuring:** Inline user policies are severely constrained in size. For complex CI/CD permissions involving multiple services, standalone Managed Policies are required.
 2. **Hybrid Local/CI Workflows:** Care must be taken when depending on local filesystem paths (`file()`) in Terraform. It breaks when executed on remote runners unless accounted for with conditionals or default variable text.
 3. **AWS API Quirks:** Not all strings are treated equally by AWS. Descriptions in security groups must be strictly ASCII to prevent deployment failure.
+4. **Remote State Bootstrap Pattern:** The state backend (S3 + DynamoDB) must be provisioned separately before the main config runs. This is a standard production pattern that prevents the chicken-and-egg problem of storing state for the resource that stores your state.
 
 ---
 
@@ -168,3 +169,5 @@ In each case, I reviewed the AI-generated output, verified against official docu
 | Documentation | 30 mins | README, PROCESS.md, creating plan and outputs |
 | Testing | 15 mins | terraform plan/apply, visual verification of Nginx |
 | **Total** | **~4 hours** | Complete Infrastructure Automation implementation |
+
+*Note: Prior AWS and Terraform experience significantly accelerated this — the decisions, architecture, and debugging were performed by the author. AI tools were used for syntax assistance and documentation generation.*
